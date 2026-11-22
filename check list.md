@@ -2,7 +2,7 @@
 
 ## Estado general
 
-- **Fase 1 — Base del proyecto:** En curso. La estructura, la interfaz base, la configuración de Supabase y el archivo de migración están preparados. La base de datos aún no está lista para pruebas de registro: la migración no se ha aplicado ni verificado.
+- **Fase 1 — Base del proyecto:** En curso. La migración se aplicó en Supabase y se verificaron las seis tablas, RLS en todas, siete políticas y ocho triggers. Falta validar un registro de extremo a extremo y confirmar la configuración de Auth.
 - **Fase 2 — Operación y modo offline:** Pendiente.
 - **Fase 3 — Analítica y capacidad:** Pendiente; existe una maqueta visual del dashboard, pero todavía no calcula métricas reales.
 - **Fase 4 — PWA y monetización:** Pendiente.
@@ -15,8 +15,8 @@
 - [x] Incorporar los recursos de marca en `public/images/`.
 - [x] Preparar clientes de Supabase, páginas de acceso/registro y callback de autenticación.
 - [x] Escribir la migración inicial con tablas, restricciones, RLS, políticas y triggers.
-- [ ] Aplicar `supabase/migrations/20261122000000_initial_schema.sql` en el proyecto Supabase.
-- [ ] Verificar tablas, políticas RLS, funciones y triggers después de aplicar la migración.
+- [x] Aplicar `supabase/migrations/20261122000000_initial_schema.sql` en el proyecto Supabase.
+- [x] Verificar las seis tablas, RLS, políticas y triggers después de aplicar la migración.
 - [ ] Confirmar un registro de prueba y la creación automática del perfil Free y sus rubros iniciales.
 - [ ] Habilitar y configurar Email y Google en Supabase Auth, incluidas las URLs de redirección locales y de producción.
 
@@ -53,4 +53,4 @@
 
 ## Criterio para empezar pruebas de registro
 
-Se podrá probar el registro cuando la migración esté aplicada sin errores, las tablas y políticas estén verificadas y el trigger de creación de perfil haya pasado una prueba controlada. Hasta entonces, no crear cuentas de prueba en producción.
+La base de datos ya está lista para una prueba de registro: la migración se aplicó correctamente y se verificaron las tablas, las políticas RLS y los triggers. Antes de probar, confirmar en Supabase Auth que Email esté habilitado y que la URL de redirección de la aplicación esté permitida. La creación del perfil Free y de los rubros iniciales se validará con el primer registro; no se creó ninguna cuenta de prueba durante la migración.
