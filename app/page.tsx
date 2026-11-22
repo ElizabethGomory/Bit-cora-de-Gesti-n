@@ -42,12 +42,12 @@ export default function Home() {
             className="mr-2 h-10 w-10"
           />
           <Image
-            src="/images/logotipo_font_white.svg"
+            src="/images/isotipo.svg"
             alt="BitácoraStudio"
             width={190}
-            height={74}
+            height={28}
             priority
-            className="h-8 w-auto"
+            className="h-7 w-auto"
           />
         </Link>
 

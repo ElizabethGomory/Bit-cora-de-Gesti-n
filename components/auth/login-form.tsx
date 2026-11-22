@@ -66,7 +66,7 @@ export function LoginForm() {
     <section className="glass-panel w-full max-w-md rounded-3xl p-6 sm:p-8">
       <Link href="/" className="mb-7 flex justify-center">
         <Image src="/images/logo.svg" alt="" width={36} height={36} className="mr-2 h-9 w-9" />
-        <Image src="/images/logotipo_font_white.svg" alt="BitácoraStudio" width={190} height={74} className="h-8 w-auto" />
+        <Image src="/images/isotipo.svg" alt="BitácoraStudio" width={190} height={28} className="h-7 w-auto" />
       </Link>
       <h1 className="text-center text-2xl font-bold">
         {mode === "sign-in" ? "Bienvenido de nuevo" : "Crea tu cuenta"}
