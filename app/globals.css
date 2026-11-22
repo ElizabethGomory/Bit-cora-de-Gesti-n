@@ -1,0 +1,80 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  --background: #0f172a;
+  --surface: #1e293b;
+  --accent: #ff9a00;
+  --text-muted: #a1a1a1;
+  --border-glass: rgb(255 255 255 / 12%);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-height: 100%;
+  background: var(--background);
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  color: #fff;
+  background-color: var(--background);
+  background-image:
+    radial-gradient(at 0% 0%, rgb(255 154 0 / 14%) 0, transparent 48%),
+    radial-gradient(at 100% 0%, rgb(148 163 184 / 13%) 0, transparent 46%),
+    radial-gradient(at 82% 100%, rgb(255 154 0 / 9%) 0, transparent 44%);
+  background-attachment: fixed;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+.glass-panel {
+  border: 1px solid var(--border-glass);
+  background: rgb(30 41 59 / 58%);
+  box-shadow: 0 8px 32px rgb(0 0 0 / 30%);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.glass-card {
+  border: 1px solid rgb(255 255 255 / 14%);
+  background: rgb(255 255 255 / 6%);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  transition:
+    border-color 180ms ease,
+    background-color 180ms ease,
+    transform 180ms ease;
+}
+
+.glass-card:hover {
+  transform: translateY(-2px);
+  border-color: rgb(255 154 0 / 48%);
+  background: rgb(255 255 255 / 9%);
+}
+
+.glass-input {
+  border: 1px solid rgb(255 255 255 / 18%);
+  background: rgb(15 23 42 / 72%);
+  color: #fff;
+}
+
+.glass-input:focus {
+  border-color: var(--accent);
+  outline: 3px solid rgb(255 154 0 / 20%);
+  outline-offset: 1px;
+}
+
+::selection {
+  color: white;
+  background: #ff9a00;
+}

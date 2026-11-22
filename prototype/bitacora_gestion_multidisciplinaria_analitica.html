@@ -1,0 +1,2091 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="BitácoraStudio">
+    <title>Bitácora Pro | Control de Tiempos, Rubros & Proyectos</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js para analítica visual -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Fonts: Inter & JetBrains Mono -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        slate: {
+                            850: '#1e293b',
+                            900: '#0f172a',
+                            950: '#090d16',
+                        },
+                        brand: {
+                            orange: '#f97316',
+                            amber: '#fb923c',
+                            darkOrange: '#ea580c',
+                            lightGray: '#f1f5f9',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Estilos base y fondo ambiental para resaltar el Glassmorfismo */
+        body {
+            background-color: #0f172a; /* Gris Pizarra Profundo */
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(249, 115, 22, 0.22) 0px, transparent 50%),
+                radial-gradient(at 100% 0%, rgba(148, 163, 184, 0.18) 0px, transparent 50%),
+                radial-gradient(at 80% 100%, rgba(234, 88, 12, 0.18) 0px, transparent 50%),
+                radial-gradient(at 15% 85%, rgba(241, 245, 249, 0.08) 0px, transparent 50%);
+            background-attachment: fixed;
+            color: #f8fafc;
+            min-height: 100vh;
+        }
+
+        /* Clases de Glassmorfismo */
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.55); /* Gris pizarra translúcido */
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.35);
+        }
+
+        .glass-card-light {
+            background: rgba(241, 245, 249, 0.08); /* Gris claro / blanco translúcido */
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            transition: all 0.25s ease;
+        }
+
+        .glass-card-light:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(249, 115, 22, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .glass-input {
+            background: rgba(15, 23, 42, 0.65);
+            border: 1px solid rgba(241, 245, 249, 0.2);
+            color: #ffffff;
+            transition: all 0.2s ease;
+        }
+
+        .glass-input:focus {
+            outline: none;
+            border-color: #f97316;
+            box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.25);
+        }
+
+        /* Scrollbar personalizada */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.5);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(148, 163, 184, 0.3);
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(249, 115, 22, 0.7);
+        }
+
+        /* Animación sutil para el cronómetro activo */
+        @keyframes pulse-orange {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.5); }
+            50% { box-shadow: 0 0 0 8px rgba(249, 115, 22, 0); }
+        }
+        .timer-active {
+            animation: pulse-orange 2s infinite;
+        }
+    </style>
+</head>
+<body class="antialiased selection:bg-orange-500 selection:text-white">
+
+    <!-- Contenedor Principal -->
+    <div class="flex flex-col lg:flex-row min-h-screen">
+
+        <!-- Sidebar / Barra de Navegación Glass -->
+        <aside class="glass-panel lg:w-72 w-full lg:min-h-screen p-5 flex flex-col justify-between z-20 border-b lg:border-b-0 lg:border-r border-white/15">
+            <div>
+                <!-- Logo y Título -->
+                <div class="flex items-center gap-3 mb-8">
+                    <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-lg shadow-orange-500/30 text-white font-bold text-xl">
+                        <i data-lucide="layers" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-lg tracking-tight text-white leading-tight">Bitácora<span class="text-orange-400">Studio</span></h1>
+                        <div class="flex items-center gap-1.5 mt-0.5">
+                            <span id="sync-status-dot" class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                            <p id="sync-status-text" class="text-[11px] text-slate-300">Nube Sincronizada</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botón Instalar App (PWA) visible si el navegador lo permite -->
+                <button id="btn-install-pwa" onclick="installPWA()" class="hidden w-full mb-4 bg-gradient-to-r from-orange-500/20 to-amber-500/20 hover:from-orange-500/30 hover:to-amber-500/30 border border-orange-500/40 text-orange-300 text-xs font-semibold py-2.5 px-3 rounded-xl transition flex items-center justify-center gap-2">
+                    <i data-lucide="smartphone" class="w-4 h-4 text-orange-400"></i> Instalar App en Dispositivo
+                </button>
+
+                <!-- Cronómetro Rápido en Vivo -->
+                <div class="glass-card-light rounded-2xl p-4 mb-6">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-semibold uppercase tracking-wider text-orange-400 flex items-center gap-1.5">
+                            <span id="timer-dot" class="w-2 h-2 rounded-full bg-slate-400"></span>
+                            Cronómetro Focus
+                        </span>
+                        <span id="timer-display" class="font-mono text-lg font-bold text-white">00:00:00</span>
+                    </div>
+                    <select id="timer-project-select" onchange="updateTimerTaskOptions()" class="glass-input w-full text-xs rounded-xl px-2.5 py-2 mb-2 text-slate-200">
+                        <option value="">Seleccionar proyecto activo...</option>
+                    </select>
+                    <input type="text" id="timer-task-input" list="timer-project-tasks-list" placeholder="Elegir tarea del proyecto o escribir..." class="glass-input w-full text-xs rounded-xl px-2.5 py-2 mb-2.5 text-slate-200">
+                    <datalist id="timer-project-tasks-list"></datalist>
+                    <div class="flex gap-2">
+                        <button id="btn-timer-toggle" onclick="toggleTimer()" class="flex-1 bg-orange-500 hover:bg-orange-600 text-white text-xs font-semibold py-2 px-3 rounded-xl transition flex items-center justify-center gap-1.5 shadow-md shadow-orange-500/20">
+                            <i data-lucide="play" class="w-3.5 h-3.5"></i> <span id="btn-timer-text">Iniciar</span>
+                        </button>
+                        <button onclick="saveTimerToLog()" title="Guardar tiempo en bitácora" class="bg-white/10 hover:bg-white/20 text-white text-xs font-semibold py-2 px-3 rounded-xl transition flex items-center justify-center">
+                            <i data-lucide="check-circle" class="w-4 h-4 text-orange-400"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Navegación -->
+                <nav class="space-y-1.5">
+                    <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium bg-orange-500/20 text-orange-300 border border-orange-500/30 transition">
+                        <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
+                        Dashboard & Tiempos
+                    </button>
+                    <button onclick="switchTab('projects')" id="nav-projects" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white transition">
+                        <i data-lucide="folder-kanban" class="w-4 h-4"></i>
+                        Lista de Proyectos
+                    </button>
+                    <button onclick="switchTab('logs')" id="nav-logs" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white transition">
+                        <i data-lucide="clock" class="w-4 h-4"></i>
+                        Bitácora Diaria / Tareas
+                    </button>
+                    <button onclick="switchTab('estimator')" id="nav-estimator" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white transition">
+                        <i data-lucide="calculator" class="w-4 h-4"></i>
+                        Planificador & Monetización
+                    </button>
+                    <button onclick="switchTab('catalog')" id="nav-catalog" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white transition">
+                        <i data-lucide="tags" class="w-4 h-4"></i>
+                        Catálogo Rubros & Tareas
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Pie del Sidebar: Respaldo y Descarga -->
+            <div class="mt-8 pt-5 border-t border-white/10 space-y-2">
+                <p class="text-[11px] uppercase tracking-wider text-slate-400 font-semibold px-1">Datos & Escritorio</p>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="exportJSON()" class="glass-card-light text-xs py-2 px-3 rounded-xl flex items-center justify-center gap-1.5 text-slate-200 hover:text-white">
+                        <i data-lucide="download" class="w-3.5 h-3.5 text-orange-400"></i> Backup
+                    </button>
+                    <label class="glass-card-light text-xs py-2 px-3 rounded-xl flex items-center justify-center gap-1.5 text-slate-200 hover:text-white cursor-pointer">
+                        <i data-lucide="upload" class="w-3.5 h-3.5 text-orange-400"></i> Restaurar
+                        <input type="file" accept=".json" onchange="importJSON(event)" class="hidden">
+                    </label>
+                </div>
+                <button onclick="downloadStandaloneApp()" class="w-full mt-2 bg-white/10 hover:bg-white/20 border border-white/15 text-white text-xs font-medium py-2.5 px-3 rounded-xl transition flex items-center justify-center gap-2">
+                    <i data-lucide="monitor-down" class="w-4 h-4 text-orange-400"></i> Guardar App en PC (.html)
+                </button>
+                <div class="pt-2">
+                    <p class="text-[10px] text-slate-500 truncate" id="cloud-user-badge" title="ID de sincronización entre dispositivos">ID Sync: Conectando...</p>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Área de Contenido Principal -->
+        <main class="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
+            
+            <!-- Header Superior con Acciones Rápidas -->
+            <header class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+                <div>
+                    <h2 id="page-title" class="text-2xl sm:text-3xl font-bold text-white tracking-tight">Dashboard Analítico</h2>
+                    <p id="page-subtitle" class="text-sm text-slate-300 mt-0.5">Métricas reales de tus rubros, tareas específicas y capacidad mensual.</p>
+                </div>
+                <div class="flex flex-wrap items-center gap-3">
+                    <button onclick="openModal('modal-log')" class="glass-card-light hover:border-orange-400 text-white text-sm font-medium px-4 py-2.5 rounded-xl flex items-center gap-2">
+                        <i data-lucide="plus-circle" class="w-4 h-4 text-orange-400"></i> Registrar Horas / Tarea
+                    </button>
+                    <button onclick="openModal('modal-project')" class="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white text-sm font-semibold px-4 py-2.5 rounded-xl shadow-lg shadow-orange-500/25 flex items-center gap-2 transition">
+                        <i data-lucide="folder-plus" class="w-4 h-4"></i> Nuevo Proyecto
+                    </button>
+                </div>
+            </header>
+
+            <!-- Notificación Toast Flotante -->
+            <div id="toast" class="fixed bottom-5 right-5 z-50 hidden transform transition-all duration-300">
+                <div class="glass-panel border-l-4 border-orange-500 px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3">
+                    <i data-lucide="sparkles" class="w-5 h-5 text-orange-400"></i>
+                    <span id="toast-message" class="text-sm font-medium text-white">Acción completada</span>
+                </div>
+            </div>
+
+            <!-- ==================== SECCIÓN 1: DASHBOARD ==================== -->
+            <section id="tab-dashboard" class="space-y-6">
+                
+                <!-- Tarjetas KPI Principales -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+                    <div class="glass-panel rounded-2xl p-5 relative overflow-hidden">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-xs font-medium uppercase tracking-wider text-slate-300">Horas Hoy</p>
+                                <h3 id="kpi-hours-today" class="text-3xl font-bold text-white mt-1 font-mono">0.0 h</h3>
+                            </div>
+                            <div class="p-2.5 rounded-xl bg-orange-500/20 text-orange-400">
+                                <i data-lucide="sun" class="w-5 h-5"></i>
+                            </div>
+                        </div>
+                        <p id="kpi-today-detail" class="text-xs text-slate-400 mt-3">En 0 sesiones registradas hoy</p>
+                    </div>
+
+                    <div class="glass-panel rounded-2xl p-5 relative overflow-hidden">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-xs font-medium uppercase tracking-wider text-slate-300">Horas Esta Semana</p>
+                                <h3 id="kpi-hours-week" class="text-3xl font-bold text-white mt-1 font-mono">0.0 h</h3>
+                            </div>
+                            <div class="p-2.5 rounded-xl bg-white/10 text-slate-200">
+                                <i data-lucide="calendar-days" class="w-5 h-5"></i>
+                            </div>
+                        </div>
+                        <div class="w-full bg-slate-800 rounded-full h-1.5 mt-3">
+                            <div id="kpi-week-bar" class="bg-orange-500 h-1.5 rounded-full" style="width: 0%"></div>
+                        </div>
+                        <p id="kpi-week-detail" class="text-xs text-slate-400 mt-1.5">Meta semanal: 40h</p>
+                    </div>
+
+                    <div class="glass-panel rounded-2xl p-5 relative overflow-hidden">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-xs font-medium uppercase tracking-wider text-slate-300">Proyectos Activos</p>
+                                <h3 id="kpi-active-projects" class="text-3xl font-bold text-white mt-1 font-mono">0</h3>
+                            </div>
+                            <div class="p-2.5 rounded-xl bg-orange-500/20 text-orange-400">
+                                <i data-lucide="rocket" class="w-5 h-5"></i>
+                            </div>
+                        </div>
+                        <p id="kpi-modality-split" class="text-xs text-slate-300 mt-3">Propios: 0 | Equipo: 0 | Empresa: 0</p>
+                    </div>
+
+                    <div class="glass-panel rounded-2xl p-5 relative overflow-hidden">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-xs font-medium uppercase tracking-wider text-slate-300">Promedio Proyecto Completo</p>
+                                <h3 id="kpi-avg-project" class="text-3xl font-bold text-orange-400 mt-1 font-mono">0.0 h</h3>
+                            </div>
+                            <div class="p-2.5 rounded-xl bg-white/10 text-slate-200">
+                                <i data-lucide="gauge" class="w-5 h-5"></i>
+                            </div>
+                        </div>
+                        <p id="kpi-completed-count" class="text-xs text-slate-400 mt-3">Basado en 0 proyectos finalizados</p>
+                    </div>
+                </div>
+
+                <!-- Gráficos Analíticos -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Gráfico 1: Horas por Rubro -->
+                    <div class="glass-panel rounded-2xl p-5">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <h4 class="font-semibold text-white">Distribución de Horas por Rubro</h4>
+                                <p class="text-xs text-slate-400">Videojuegos, Agénticos, UI/UX, Ciencia de Datos, etc.</p>
+                            </div>
+                            <span class="text-xs px-2.5 py-1 rounded-lg bg-orange-500/20 text-orange-300 font-medium">Histórico Total</span>
+                        </div>
+                        <div class="h-64 relative">
+                            <canvas id="chartRubros"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Gráfico 2: Tiempo Promedio por Tipo de Tarea -->
+                    <div class="glass-panel rounded-2xl p-5">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <h4 class="font-semibold text-white">Demora Promedio por Tarea Específica</h4>
+                                <p class="text-xs text-slate-400">Prompts, Specs, Logos, Banners, Frames, Arquitectura...</p>
+                            </div>
+                            <span class="text-xs px-2.5 py-1 rounded-lg bg-white/10 text-slate-200 font-medium">Horas / Tarea</span>
+                        </div>
+                        <div class="h-64 relative">
+                            <canvas id="chartTareas"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabla Resumen de Benchmark por Tarea y Rubro -->
+                <div class="glass-panel rounded-2xl p-5">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+                        <div>
+                            <h4 class="font-semibold text-white flex items-center gap-2">
+                                <i data-lucide="table-2" class="w-4 h-4 text-orange-400"></i>
+                                Benchmark de Tiempos por Tarea (Para Cotizar y Planificar)
+                            </h4>
+                            <p class="text-xs text-slate-300">Cálculo automático de cuánto te demoras en promedio en cada micro-tarea según tu historial real.</p>
+                        </div>
+                        <select id="benchmark-rubro-filter" onchange="renderDashboard()" class="glass-input text-xs rounded-xl px-3 py-2">
+                            <option value="ALL">Todos los Rubros</option>
+                        </select>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="border-b border-white/15 text-xs uppercase text-slate-400">
+                                    <th class="py-3 px-4">Tipo de Tarea</th>
+                                    <th class="py-3 px-4">Rubro Específico</th>
+                                    <th class="py-3 px-4 text-center">Sesiones</th>
+                                    <th class="py-3 px-4 text-right">Tiempo Mín / Máx</th>
+                                    <th class="py-3 px-4 text-right text-orange-400">Promedio Real</th>
+                                    <th class="py-3 px-4 text-right">Sugerencia Cotización (+20% buffer)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="benchmark-table-body" class="divide-y divide-white/10 text-sm">
+                                <!-- Se llena dinámicamente -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==================== SECCIÓN 2: LISTA DE PROYECTOS ==================== -->
+            <section id="tab-projects" class="hidden space-y-6">
+                <!-- Filtros de Proyectos -->
+                <div class="glass-panel rounded-2xl p-4 flex flex-col md:flex-row gap-3 items-center justify-between">
+                    <div class="flex flex-wrap gap-2 w-full md:w-auto">
+                        <select id="filter-project-rubro" onchange="renderProjects()" class="glass-input text-xs rounded-xl px-3 py-2">
+                            <option value="ALL">Rubro: Todos</option>
+                        </select>
+                        <select id="filter-project-modality" onchange="renderProjects()" class="glass-input text-xs rounded-xl px-3 py-2">
+                            <option value="ALL">Modalidad: Todas</option>
+                            <option value="Propio (Sola)">Propio (Sola)</option>
+                            <option value="En Equipo (Autoría externa)">En Equipo (Autoría externa)</option>
+                            <option value="Con Empresa">Con Empresa</option>
+                            <option value="Mentoría / Docencia">Mentoría / Docencia</option>
+                        </select>
+                        <select id="filter-project-status" onchange="renderProjects()" class="glass-input text-xs rounded-xl px-3 py-2">
+                            <option value="ALL">Estado: Todos</option>
+                            <option value="En Progreso">En Progreso</option>
+                            <option value="Finalizado">Finalizado</option>
+                            <option value="Pausado">Pausado</option>
+                        </select>
+                    </div>
+                    <div class="relative w-full md:w-64">
+                        <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
+                        <input type="text" id="search-project" onkeyup="renderProjects()" placeholder="Buscar proyecto..." class="glass-input w-full text-xs rounded-xl pl-9 pr-3 py-2">
+                    </div>
+                </div>
+
+                <!-- Grid de Tarjetas de Proyectos -->
+                <div id="projects-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                    <!-- Tarjetas generadas dinámicamente -->
+                </div>
+            </section>
+
+            <!-- ==================== SECCIÓN 3: BITÁCORA DIARIA ==================== -->
+            <section id="tab-logs" class="hidden space-y-6">
+                <div class="glass-panel rounded-2xl p-5">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
+                        <div>
+                            <h3 class="text-lg font-bold text-white">Registro Cronológico de Desarrollo</h3>
+                            <p class="text-xs text-slate-300">Detalle diario de horas invertidas, tareas realizadas y observaciones técnicas.</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <select id="filter-log-project" onchange="renderLogs()" class="glass-input text-xs rounded-xl px-3 py-2">
+                                <option value="ALL">Todos los proyectos</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="border-b border-white/15 text-xs uppercase text-slate-400">
+                                    <th class="py-3 px-4">Fecha</th>
+                                    <th class="py-3 px-4">Proyecto & Modalidad</th>
+                                    <th class="py-3 px-4">Rubro</th>
+                                    <th class="py-3 px-4">Tarea Específica</th>
+                                    <th class="py-3 px-4">Notas / Entregable</th>
+                                    <th class="py-3 px-4 text-right">Horas</th>
+                                    <th class="py-3 px-4 text-center">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="logs-table-body" class="divide-y divide-white/10 text-sm">
+                                <!-- Se llena dinámicamente -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==================== SECCIÓN 4: PLANIFICADOR Y MONETIZACIÓN ==================== -->
+            <section id="tab-estimator" class="hidden space-y-6">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Configuración de Capacidad y Tarifa -->
+                    <div class="glass-panel rounded-2xl p-6 space-y-4">
+                        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                            <i data-lucide="sliders" class="w-5 h-5 text-orange-400"></i>
+                            Tu Capacidad & Tarifa Base
+                        </h3>
+                        <p class="text-xs text-slate-300">Define tus parámetros para calcular cuántos proyectos puedes tomar al mes y cuánto cobrar.</p>
+                        
+                        <div>
+                            <label class="block text-xs font-medium text-slate-300 mb-1">Horas productivas por día</label>
+                            <input type="number" id="est-hours-day" value="6" min="1" max="16" step="0.5" oninput="calculateCapacity()" class="glass-input w-full rounded-xl px-3 py-2 text-sm font-mono">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-300 mb-1">Días laborales al mes</label>
+                            <input type="number" id="est-days-month" value="22" min="1" max="31" oninput="calculateCapacity()" class="glass-input w-full rounded-xl px-3 py-2 text-sm font-mono">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-300 mb-1">Valor Hora Base (USD / Moneda local)</label>
+                            <input type="number" id="est-hourly-rate" value="35" min="1" oninput="calculateCapacity()" class="glass-input w-full rounded-xl px-3 py-2 text-sm font-mono">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-300 mb-1">Margen de seguridad / Imprevistos (%)</label>
+                            <input type="number" id="est-buffer" value="20" min="0" max="100" oninput="calculateCapacity()" class="glass-input w-full rounded-xl px-3 py-2 text-sm font-mono">
+                        </div>
+                    </div>
+
+                    <!-- Resultados de Capacidad Mensual -->
+                    <div class="lg:col-span-2 glass-panel rounded-2xl p-6 flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-lg font-bold text-white flex items-center gap-2 mb-1">
+                                <i data-lucide="pie-chart" class="w-5 h-5 text-orange-400"></i>
+                                Proyección de Capacidad Mensual & Monetización
+                            </h3>
+                            <p class="text-xs text-slate-300 mb-6">Cálculo cruzando tu disponibilidad con el promedio real de horas que te toma cada tipo de proyecto.</p>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                                <div class="glass-card-light rounded-xl p-4">
+                                    <span class="text-xs text-slate-400">Capacidad Total Mensual</span>
+                                    <p id="cap-total-hours" class="text-2xl font-bold text-white font-mono mt-1">132 h</p>
+                                    <span class="text-[11px] text-orange-400">Disponibles para producir</span>
+                                </div>
+                                <div class="glass-card-light rounded-xl p-4">
+                                    <span class="text-xs text-slate-400">Potencial Facturación Mes</span>
+                                    <p id="cap-total-money" class="text-2xl font-bold text-orange-400 font-mono mt-1">$4,620</p>
+                                    <span class="text-[11px] text-slate-300">Al 100% de ocupación</span>
+                                </div>
+                                <div class="glass-card-light rounded-xl p-4">
+                                    <span class="text-xs text-slate-400">Proyectos / Mes (Promedio)</span>
+                                    <p id="cap-projects-month" class="text-2xl font-bold text-white font-mono mt-1">3.2</p>
+                                    <span class="text-[11px] text-slate-300">Según tu historial real</span>
+                                </div>
+                            </div>
+
+                            <!-- Simulador de Nuevo Proyecto por Tareas -->
+                            <div class="border-t border-white/15 pt-5">
+                                <h4 class="text-sm font-semibold text-white mb-3">Simulador de Nuevo Presupuesto (Basado en tus métricas por Rubro)</h4>
+                                <div id="estimator-rubros-list" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <!-- Se llena dinámicamente con el promedio por rubro -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==================== SECCIÓN 5: CATÁLOGO DINÁMICO DE RUBROS Y TAREAS ==================== -->
+            <section id="tab-catalog" class="hidden space-y-6">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Gestión de Rubros -->
+                    <div class="glass-panel rounded-2xl p-6 space-y-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                                    <i data-lucide="briefcase" class="w-5 h-5 text-orange-400"></i>
+                                    Mis Rubros y Especialidades
+                                </h3>
+                                <p class="text-xs text-slate-300 mt-0.5">Agrega nuevos rubros (ej: Robótica, IA Generativa, Hardware) para segmentar tus tiempos.</p>
+                            </div>
+                        </div>
+
+                        <form onsubmit="addNewRubro(event)" class="flex gap-2">
+                            <input type="text" id="new-rubro-input" required placeholder="Ej: Robótica Educativa / IoT" class="glass-input flex-1 rounded-xl px-3.5 py-2 text-sm">
+                            <button type="submit" class="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-4 py-2 rounded-xl text-sm transition flex items-center gap-1.5">
+                                <i data-lucide="plus" class="w-4 h-4"></i> Agregar
+                            </button>
+                        </form>
+
+                        <div id="catalog-rubros-list" class="flex flex-wrap gap-2 pt-2">
+                            <!-- Lista dinámica de rubros -->
+                        </div>
+                    </div>
+
+                    <!-- Gestión de Tipos de Tareas -->
+                    <div class="glass-panel rounded-2xl p-6 space-y-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                                    <i data-lucide="list-checks" class="w-5 h-5 text-orange-400"></i>
+                                    Catálogo de Tipos de Tareas
+                                </h3>
+                                <p class="text-xs text-slate-300 mt-0.5">Define tareas reutilizables para proyectos de desarrollo o mentorías.</p>
+                            </div>
+                        </div>
+
+                        <form onsubmit="addNewTaskType(event)" class="flex flex-col sm:flex-row gap-2">
+                            <input type="text" id="new-task-input" required placeholder="Ej: Preparación de clases / Diseño de certificaciones" class="glass-input flex-1 rounded-xl px-3.5 py-2 text-sm">
+                            <select id="new-task-category" class="glass-input rounded-xl px-3 py-2 text-xs">
+                                <option value="Desarrollo & Diseño">Desarrollo & Diseño</option>
+                                <option value="Mentoría & Docencia">Mentoría & Docencia</option>
+                                <option value="IA & Agénticos">IA & Agénticos</option>
+                                <option value="Marketing & Gestión">Marketing & Gestión</option>
+                            </select>
+                            <button type="submit" class="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-4 py-2 rounded-xl text-sm transition flex items-center justify-center gap-1.5">
+                                <i data-lucide="plus" class="w-4 h-4"></i> Agregar
+                            </button>
+                        </form>
+
+                        <div id="catalog-tasks-list" class="space-y-2 max-h-80 overflow-y-auto pr-1 pt-2">
+                            <!-- Lista dinámica de tareas -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- ==================== MODAL: NUEVO / EDITAR PROYECTO (CON TAREAS INTERNAS) ==================== -->
+    <div id="modal-project" class="fixed inset-0 z-50 hidden bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="glass-panel w-full max-w-2xl rounded-3xl p-6 border border-white/20 shadow-2xl max-h-[92vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-5">
+                <h3 id="modal-project-title" class="text-xl font-bold text-white">Nuevo Proyecto</h3>
+                <button onclick="closeModal('modal-project')" class="text-slate-400 hover:text-white p-1">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <form id="form-project" onsubmit="saveProject(event)" class="space-y-4">
+                <input type="hidden" id="proj-id">
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Nombre del Proyecto *</label>
+                    <input type="text" id="proj-name" required placeholder="Ej: Sistema Multiagente de Ventas / Mentoría Robótica" class="glass-input w-full rounded-xl px-3.5 py-2.5 text-sm">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <div class="flex items-center justify-between mb-1">
+                            <label class="block text-xs font-medium text-slate-300">Rubro / Especialidad *</label>
+                            <button type="button" onclick="quickAddRubroPrompt()" class="text-[11px] text-orange-400 hover:text-orange-300 font-medium flex items-center gap-0.5">
+                                + Nuevo rubro
+                            </button>
+                        </div>
+                        <select id="proj-rubro" required class="glass-input w-full rounded-xl px-3.5 py-2.5 text-sm">
+                            <!-- Se llena dinámicamente desde appData.rubros -->
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Autoría / Modalidad *</label>
+                        <select id="proj-modality" required class="glass-input w-full rounded-xl px-3.5 py-2.5 text-sm">
+                            <option value="Propio (Sola)">Propio (Sola)</option>
+                            <option value="En Equipo (Autoría externa)">En Equipo (Autoría externa)</option>
+                            <option value="Con Empresa">Con Empresa</option>
+                            <option value="Mentoría / Docencia">Mentoría / Docencia</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Fecha de Inicio *</label>
+                        <input type="date" id="proj-start" required class="glass-input w-full rounded-xl px-3 py-2.5 text-sm">
+                    </div>
+    <!-- ==================== LÓGICA DE APLICACIÓN + PWA + NUBE ==================== -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Configuración de sincronización en la nube
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'bitacora-studio-default';
+        let db = null;
+        let auth = null;
+        let currentUser = null;
+        let unsubscribeCloud = null;
+        let isApplyingRemoteUpdate = false;
+
+        async function initCloudSync() {
+            const dot = document.getElementById('sync-status-dot');
+            const text = document.getElementById('sync-status-text');
+            const badge = document.getElementById('cloud-user-badge');
+
+            try {
+                if (typeof __firebase_config === 'undefined') {
+                    dot.className = 'w-2 h-2 rounded-full bg-amber-400';
+                    text.textContent = 'Modo Local Offline';
+                    if (badge) badge.textContent = 'ID Sync: Local (Sin nube)';
+                    return;
+                }
+
+                const firebaseConfig = JSON.parse(__firebase_config);
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                onAuthStateChanged(auth, (user) => {
+                    if (!user) return;
+                    currentUser = user;
+                    if (badge) badge.textContent = `ID Sync: ${user.uid}`;
+                    dot.className = 'w-2 h-2 rounded-full bg-emerald-400';
+                    text.textContent = 'En línea • Sincronizado';
+
+                    // Suscripción en tiempo real a los datos privados del usuario (PC <-> Celular <-> Tablet)
+                    const userDocRef = doc(db, 'artifacts', appId, 'users', user.uid, 'bitacora_state', 'main');
+                    if (unsubscribeCloud) unsubscribeCloud();
+
+                    unsubscribeCloud = onSnapshot(userDocRef, (snap) => {
+                        if (snap.exists()) {
+                            const remoteData = snap.data();
+                            if (remoteData && remoteData.payload) {
+                                isApplyingRemoteUpdate = true;
+                                window.applyRemoteCloudData(JSON.parse(remoteData.payload));
+                                isApplyingRemoteUpdate = false;
+                                dot.className = 'w-2 h-2 rounded-full bg-emerald-400';
+                                text.textContent = 'Sincronizado ahora';
+                            }
+                        } else {
+                            // Subir estado inicial local a la nube por primera vez
+                            window.pushDataToCloud(window.getAppData());
+                        }
+                    }, (err) => {
+                        console.error("Error de sincronización:", err);
+                        dot.className = 'w-2 h-2 rounded-full bg-amber-400';
+                        text.textContent = 'Offline (Guardado local)';
+                    });
+                });
+            } catch (e) {
+                console.warn("Nube no disponible, operando offline:", e);
+                dot.className = 'w-2 h-2 rounded-full bg-amber-400';
+                text.textContent = 'Modo Offline Local';
+            }
+        }
+
+        window.pushDataToCloud = async function(dataObj) {
+            if (!db || !currentUser || isApplyingRemoteUpdate) return;
+            const dot = document.getElementById('sync-status-dot');
+            const text = document.getElementById('sync-status-text');
+            try {
+                dot.className = 'w-2 h-2 rounded-full bg-orange-400 animate-ping';
+                text.textContent = 'Sincronizando...';
+                const userDocRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'bitacora_state', 'main');
+                await setDoc(userDocRef, {
+                    payload: JSON.stringify(dataObj),
+                    updatedAt: new Date().toISOString()
+                });
+                dot.className = 'w-2 h-2 rounded-full bg-emerald-400';
+                text.textContent = 'En línea • Sincronizado';
+            } catch (err) {
+                dot.className = 'w-2 h-2 rounded-full bg-amber-400';
+                text.textContent = 'Pendiente de conexión';
+            }
+        };
+
+        window.addEventListener('online', () => {
+            showToast('Conexión restaurada: sincronizando cambios...');
+            if (window.getAppData) window.pushDataToCloud(window.getAppData());
+        });
+
+        window.addEventListener('offline', () => {
+            const dot = document.getElementById('sync-status-dot');
+            const text = document.getElementById('sync-status-text');
+            if (dot) dot.className = 'w-2 h-2 rounded-full bg-amber-400';
+            if (text) text.textContent = 'Sin internet (Offline)';
+            showToast('Modo Offline activo: tus cambios se subirán al volver la red.');
+        });
+
+        initCloudSync();
+    </script>
+
+    <script>
+        // ==================== SOPORTE PWA (MANIFIESTO DINÁMICO + INSTALACIÓN) ====================
+        let deferredPrompt = null;
+
+        function setupPWA() {
+            // Crear manifiesto PWA dinámico en memoria para permitir instalación en móvil/PC
+            const manifest = {
+                name: "BitácoraStudio Pro",
+                short_name: "BitácoraStudio",
+                description: "Bitácora multidisciplinaria de proyectos, tiempos y monetización",
+                start_url: ".",
+                display: "standalone",
+                background_color: "#0f172a",
+                theme_color: "#f97316",
+                icons: [
+                    {
+                        src: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23f97316'/><path d='M30 35h40v8H30zm0 15h40v8H30zm0 15h25v8H30z' fill='white'/></svg>",
+                        sizes: "192x192",
+                        type: "image/svg+xml"
+                    }
+                ]
+            };
+            const stringManifest = JSON.stringify(manifest);
+            const blob = new Blob([stringManifest], { type: 'application/json' });
+            const manifestURL = URL.createObjectURL(blob);
+            const link = document.createElement('link');
+            link.rel = 'manifest';
+            link.href = manifestURL;
+            document.head.appendChild(link);
+        }
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            const btn = document.getElementById('btn-install-pwa');
+            if (btn) btn.classList.remove('hidden');
+        });
+
+        async function installPWA() {
+            if (!deferredPrompt) {
+                showToast('En iOS: toca Compartir → "Agregar a inicio". En Chrome: Menú → "Instalar app".');
+                return;
+            }
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            if (outcome === 'accepted') {
+                document.getElementById('btn-install-pwa').classList.add('hidden');
+            }
+            deferredPrompt = null;
+        }
+
+        setupPWA();
+
+        // Inicializar iconos Lucide
+        lucide.createIcons();
+
+        // Clave de almacenamiento local
+        const STORAGE_KEY = 'bitacora_studio_data_v2';
+
+        // Rubros iniciales por defecto (extensibles por el usuario)
+        const defaultRubros = [
+            'Sistemas Agénticos / Multiagénticos',
+            'Desarrollo de Videojuegos',
+            'Desarrollo Web / Frontend',
+            'Desarrollo de Apps / Software',
+            'Diseño y Desarrollo UI/UX',
+            'Diseño Gráfico & Branding',
+            'Ciencia de Datos / IA',
+            'Mentoría Videojuegos',
+            'Mentoría Ciencia de Datos',
+            'Mentoría Desarrollo Frontend',
+            'Mentoría Robótica'
+        ];
+
+        // Catálogo inicial de tipos de tareas (extensible por el usuario)
+        const defaultTaskCatalog = [
+            { name: 'Frontend por Frame / Pantalla', category: 'Desarrollo & Diseño' },
+            { name: 'Diseño de Prompt / System Instructions', category: 'IA & Agénticos' },
+            { name: 'Corrección de Specs / Documentación', category: 'IA & Agénticos' },
+            { name: 'Arquitectura Multiagente / Orquestación', category: 'IA & Agénticos' },
+            { name: 'Desarrollo por Frames / Animación', category: 'Desarrollo & Diseño' },
+            { name: 'Mecánicas de Juego / Gameplay', category: 'Desarrollo & Diseño' },
+            { name: 'Diseño de Logo / Identidad Visual', category: 'Desarrollo & Diseño' },
+            { name: 'Diseño de Banners / Piezas Gráficas', category: 'Marketing & Gestión' },
+            { name: 'Campaña Publicitaria & Creativos', category: 'Marketing & Gestión' },
+            { name: 'Wireframes & Prototipado UI/UX', category: 'Desarrollo & Diseño' },
+            { name: 'Limpieza de Datos & Modelado ML', category: 'IA & Agénticos' },
+            { name: 'Preparación de Clases & Material', category: 'Mentoría & Docencia' },
+            { name: 'Planificación Curricular / Temario', category: 'Mentoría & Docencia' },
+            { name: 'Grabación & Edición de Clases', category: 'Mentoría & Docencia' },
+            { name: 'Diseño de Certificaciones & Diplomas', category: 'Mentoría & Docencia' },
+            { name: 'Sesión de Mentoría en Vivo', category: 'Mentoría & Docencia' },
+            { name: 'Testing, QA & Debugging', category: 'Desarrollo & Diseño' }
+        ];
+
+        // Datos iniciales de ejemplo realistas basados en tus rubros y tareas internas
+        const defaultData = {
+            rubros: [...defaultRubros],
+            taskCatalog: [...defaultTaskCatalog],
+            projects: [
+                {
+                    id: 'proj-1',
+                    name: 'Orquestador Multiagente Soporte SaaS',
+                    rubro: 'Sistemas Agénticos / Multiagénticos',
+                    modality: 'Con Empresa',
+                    startDate: getRelativeDate(-14),
+                    endDate: '',
+                    status: 'En Progreso',
+                    estHours: 35,
+                    budget: 1400,
+                    notes: 'Arquitectura con agentes supervisores y herramientas RAG.',
+                    tasks: [
+                        { id: 't-101', name: 'Diseño de Prompt / System Instructions', estHours: 12, done: false },
+                        { id: 't-102', name: 'Corrección de Specs / Documentación', estHours: 8, done: true },
+                        { id: 't-103', name: 'Arquitectura Multiagente / Orquestación', estHours: 15, done: false }
+                    ]
+                },
+                {
+                    id: 'proj-2',
+                    name: 'E-commerce Web + Campaña Lanzamiento',
+                    rubro: 'Desarrollo Web / Frontend',
+                    modality: 'Propio (Sola)',
+                    startDate: getRelativeDate(-20),
+                    endDate: '',
+                    status: 'En Progreso',
+                    estHours: 42,
+                    budget: 1800,
+                    notes: 'Desarrollo integral: pantallas frontend, identidad gráfica y campaña.',
+                    tasks: [
+                        { id: 't-201', name: 'Frontend por Frame / Pantalla', estHours: 22, done: false },
+                        { id: 't-202', name: 'Diseño Gráfico & Branding', estHours: 10, done: true },
+                        { id: 't-203', name: 'Campaña Publicitaria & Creativos', estHours: 10, done: false }
+                    ]
+                },
+                {
+                    id: 'proj-3',
+                    name: 'Programa Mentoría: Robótica & Sensores',
+                    rubro: 'Mentoría Robótica',
+                    modality: 'Mentoría / Docencia',
+                    startDate: getRelativeDate(-18),
+                    endDate: '',
+                    status: 'En Progreso',
+                    estHours: 26,
+                    budget: 980,
+                    notes: 'Creación de curso desde cero: planificación, clases grabadas y diplomas.',
+                    tasks: [
+                        { id: 't-301', name: 'Planificación Curricular / Temario', estHours: 4, done: true },
+                        { id: 't-302', name: 'Preparación de Clases & Material', estHours: 10, done: false },
+                        { id: 't-303', name: 'Grabación & Edición de Clases', estHours: 8, done: false },
+                        { id: 't-304', name: 'Diseño de Certificaciones & Diplomas', estHours: 4, done: false }
+                    ]
+                },
+                {
+                    id: 'proj-4',
+                    name: 'Mentoría Ciencia de Datos con Python',
+                    rubro: 'Mentoría Ciencia de Datos',
+                    modality: 'Mentoría / Docencia',
+                    startDate: getRelativeDate(-30),
+                    endDate: getRelativeDate(-4),
+                    status: 'Finalizado',
+                    estHours: 18,
+                    budget: 750,
+                    notes: 'Notebooks prácticos, datasets y sesiones en vivo.',
+                    tasks: [
+                        { id: 't-401', name: 'Preparación de Clases & Material', estHours: 8, done: true },
+                        { id: 't-402', name: 'Sesión de Mentoría en Vivo', estHours: 10, done: true }
+                    ]
+                }
+            ],
+            logs: [
+                { id: 'log-1', projectId: 'proj-1', date: getRelativeDate(0), hours: 3.5, task: 'Diseño de Prompt / System Instructions', notes: 'Refinamiento de prompts para evitar alucinaciones en agente router.' },
+                { id: 'log-2', projectId: 'proj-1', date: getRelativeDate(-1), hours: 2.0, task: 'Corrección de Specs / Documentación', notes: 'Ajuste de contratos JSON entre agentes.' },
+                { id: 'log-3', projectId: 'proj-2', date: getRelativeDate(0), hours: 3.0, task: 'Frontend por Frame / Pantalla', notes: 'Maquetación responsive de catálogo y carrito.' },
+                { id: 'log-4', projectId: 'proj-2', date: getRelativeDate(-3), hours: 4.5, task: 'Campaña Publicitaria & Creativos', notes: 'Piezas visuales para Meta Ads y banners web.' },
+                { id: 'log-5', projectId: 'proj-3', date: getRelativeDate(-1), hours: 4.0, task: 'Preparación de Clases & Material', notes: 'Armado de prácticas de Arduino y diagramas de circuitos.' },
+                { id: 'log-6', projectId: 'proj-3', date: getRelativeDate(-4), hours: 2.5, task: 'Diseño de Certificaciones & Diplomas', notes: 'Plantilla vectorial con código QR de validación.' },
+                { id: 'log-7', projectId: 'proj-4', date: getRelativeDate(-10), hours: 6.5, task: 'Preparación de Clases & Material', notes: 'Notebooks de Pandas, Scikit-Learn y limpieza de datos.' },
+                { id: 'log-8', projectId: 'proj-4', date: getRelativeDate(-6), hours: 10.0, task: 'Sesión de Mentoría en Vivo', notes: '5 sesiones de 2 horas cada una.' }
+            ]
+        };
+
+        // Helper para fechas relativas YYYY-MM-DD
+        function getRelativeDate(daysOffset) {
+            const d = new Date();
+            d.setDate(d.getDate() + daysOffset);
+            return d.toISOString().split('T')[0];
+        }
+
+        // Estado global de la app
+        let appData = loadData();
+        let chartRubrosInstance = null;
+        let chartTareasInstance = null;
+        let draftProjectTasks = []; // Tareas temporales al crear/editar un proyecto
+
+        // Variables del Cronómetro
+        let timerInterval = null;
+        let timerSeconds = 0;
+        let timerRunning = false;
+
+        function loadData() {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    if (!parsed.rubros) parsed.rubros = [...defaultRubros];
+                    if (!parsed.taskCatalog) parsed.taskCatalog = [...defaultTaskCatalog];
+                    parsed.projects.forEach(p => { if (!p.tasks) p.tasks = []; });
+                    return parsed;
+                } catch (e) {
+                    console.error("Error leyendo datos:", e);
+                }
+            }
+            return JSON.parse(JSON.stringify(defaultData));
+        }
+
+        function saveData() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+            if (window.pushDataToCloud) {
+                window.pushDataToCloud(appData);
+            }
+            refreshAllViews();
+        }
+
+        // Exponer helpers para sincronización bidireccional en la nube
+        window.getAppData = () => appData;
+        window.applyRemoteCloudData = (remoteObj) => {
+            if (!remoteObj || !remoteObj.projects) return;
+            appData = remoteObj;
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+            refreshAllViews();
+        };
+
+        // Mostrar notificación Toast
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-message').textContent = msg;
+            toast.classList.remove('hidden');
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 3200);
+        }
+
+        // Cambio de pestañas
+        function switchTab(tabName) {
+            const tabs = ['dashboard', 'projects', 'logs', 'estimator', 'catalog'];
+            const titles = {
+                dashboard: ['Dashboard Analítico', 'Métricas reales de tus rubros, tareas específicas y capacidad mensual.'],
+                projects: ['Lista de Proyectos', 'Gestiona tus desarrollos, desglose de tareas internas y seguimiento de horas.'],
+                logs: ['Bitácora Diaria / Tareas', 'Historial detallado de horas invertidas por día, semana y tipo de entregable.'],
+                estimator: ['Planificador & Monetización', 'Calcula cuántos proyectos puedes asumir al mes y cotiza según tu velocidad real.'],
+                catalog: ['Catálogo de Rubros & Tareas', 'Agrega nuevas especialidades y tipos de tareas para expandir tu bitácora.']
+            };
+
+            tabs.forEach(t => {
+                document.getElementById(`tab-${t}`).classList.add('hidden');
+                const btn = document.getElementById(`nav-${t}`);
+                if (btn) btn.className = 'nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white transition';
+            });
+
+            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`nav-${tabName}`);
+            if (activeBtn) activeBtn.className = 'nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium bg-orange-500/20 text-orange-300 border border-orange-500/30 transition';
+
+            document.getElementById('page-title').textContent = titles[tabName][0];
+            document.getElementById('page-subtitle').textContent = titles[tabName][1];
+
+            if (tabName === 'dashboard') renderDashboard();
+            if (tabName === 'estimator') calculateCapacity();
+            if (tabName === 'catalog') renderCatalog();
+        }
+
+        // Modales
+        function openModal(id) {
+            populateProjectSelects();
+            if (id === 'modal-log') {
+                document.getElementById('log-date').value = getRelativeDate(0);
+                updateLogTaskOptions();
+            }
+            if (id === 'modal-project' && !document.getElementById('proj-id').value) {
+                document.getElementById('form-project').reset();
+                document.getElementById('proj-id').value = '';
+                document.getElementById('proj-start').value = getRelativeDate(0);
+                document.getElementById('modal-project-title').textContent = 'Nuevo Proyecto';
+                draftProjectTasks = [];
+                renderDraftProjectTasks();
+            }
+            document.getElementById(id).classList.remove('hidden');
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+            if (id === 'modal-project') {
+                document.getElementById('proj-id').value = '';
+                draftProjectTasks = [];
+            }
+        }
+
+        // Poblar selectores de proyectos, rubros y sugerencias de tareas
+        function populateProjectSelects() {
+            const selects = ['log-project-id', 'timer-project-select', 'filter-log-project'];
+            selects.forEach(selId => {
+                const el = document.getElementById(selId);
+                if (!el) return;
+                const currentVal = el.value;
+                el.innerHTML = selId === 'filter-log-project' 
+                    ? '<option value="ALL">Todos los proyectos</option>' 
+                    : '<option value="">Seleccionar proyecto...</option>';
+                
+                appData.projects.forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = p.id;
+                    opt.textContent = `${p.name} (${p.rubro})`;
+                    el.appendChild(opt);
+                });
+                if (currentVal) el.value = currentVal;
+            });
+            updateTimerTaskOptions();
+
+            // Selector de Rubros en Modal Proyecto (toma todos los rubros del catálogo)
+            const projRubroSel = document.getElementById('proj-rubro');
+            if (projRubroSel) {
+                const prev = projRubroSel.value;
+                projRubroSel.innerHTML = appData.rubros.map(r => `<option value="${r}">${r}</option>`).join('');
+                if (prev && appData.rubros.includes(prev)) projRubroSel.value = prev;
+            }
+
+            // Filtros de Rubros en Dashboard y Proyectos
+            const allRubrosUsed = [...new Set([...appData.rubros, ...appData.projects.map(p => p.rubro)])];
+            ['filter-project-rubro', 'benchmark-rubro-filter'].forEach(selId => {
+                const el = document.getElementById(selId);
+                if (!el) return;
+                const current = el.value;
+                el.innerHTML = '<option value="ALL">Todos los Rubros</option>';
+                allRubrosUsed.forEach(r => {
+                    const opt = document.createElement('option');
+                    opt.value = r;
+                    opt.textContent = r;
+                    el.appendChild(opt);
+                });
+                if (current) el.value = current;
+            });
+
+            // Datalist de sugerencias de tareas (catálogo + tareas usadas en logs)
+            const datalist = document.getElementById('task-suggestions');
+            if (datalist) {
+                const catalogNames = appData.taskCatalog.map(t => t.name);
+                const loggedNames = appData.logs.map(l => l.task);
+                const uniqueTasks = [...new Set([...catalogNames, ...loggedNames])];
+                datalist.innerHTML = uniqueTasks.map(t => `<option value="${t}">`).join('');
+            }
+        }
+
+        // Gestión del Catálogo de Rubros y Tareas
+        function addNewRubro(e) {
+            e.preventDefault();
+            const input = document.getElementById('new-rubro-input');
+            const val = input.value.trim();
+            if (!val) return;
+            if (!appData.rubros.includes(val)) {
+                appData.rubros.push(val);
+                saveData();
+                showToast(`Rubro "${val}" agregado al catálogo`);
+            } else {
+                showToast('Ese rubro ya existe');
+            }
+            input.value = '';
+        }
+
+        function deleteRubro(rubroName) {
+            appData.rubros = appData.rubros.filter(r => r !== rubroName);
+            saveData();
+            showToast('Rubro eliminado del catálogo');
+        }
+
+        function quickAddRubroPrompt() {
+            document.getElementById('quick-rubro-name').value = '';
+            document.getElementById('modal-quick-rubro').classList.remove('hidden');
+        }
+
+        function confirmQuickRubro() {
+            const val = document.getElementById('quick-rubro-name').value.trim();
+            if (!val) return;
+            if (!appData.rubros.includes(val)) {
+                appData.rubros.push(val);
+                saveData();
+            }
+            document.getElementById('proj-rubro').value = val;
+            closeModal('modal-quick-rubro');
+            showToast(`Rubro "${val}" listo para usar`);
+        }
+
+        function addNewTaskType(e) {
+            e.preventDefault();
+            const nameInput = document.getElementById('new-task-input');
+            const catInput = document.getElementById('new-task-category');
+            const name = nameInput.value.trim();
+            if (!name) return;
+
+            if (!appData.taskCatalog.some(t => t.name.toLowerCase() === name.toLowerCase())) {
+                appData.taskCatalog.unshift({ name, category: catInput.value });
+                saveData();
+                showToast(`Tarea "${name}" añadida al catálogo`);
+            } else {
+                showToast('Esa tarea ya está en tu catálogo');
+            }
+            nameInput.value = '';
+        }
+
+        function deleteTaskFromCatalog(taskName) {
+            appData.taskCatalog = appData.taskCatalog.filter(t => t.name !== taskName);
+            saveData();
+            showToast('Tarea eliminada del catálogo');
+        }
+
+        function renderCatalog() {
+            const rubrosContainer = document.getElementById('catalog-rubros-list');
+            rubrosContainer.innerHTML = appData.rubros.map(r => `
+                <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/10 border border-white/15 text-xs text-white">
+                    <span>${r}</span>
+                    <button onclick="deleteRubro('${r.replace(/'/g, "\\'")}')" class="text-slate-400 hover:text-red-400 transition">
+                        <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                    </button>
+                </span>
+            `).join('');
+
+            const tasksContainer = document.getElementById('catalog-tasks-list');
+            tasksContainer.innerHTML = appData.taskCatalog.map(t => `
+                <div class="flex items-center justify-between bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl px-3.5 py-2.5 transition">
+                    <div>
+                        <p class="text-xs font-semibold text-white">${t.name}</p>
+                        <span class="text-[10px] text-orange-400">${t.category}</span>
+                    </div>
+                    <button onclick="deleteTaskFromCatalog('${t.name.replace(/'/g, "\\'")}')" class="text-slate-400 hover:text-red-400 p-1">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                    </button>
+                </div>
+            `).join('');
+
+            lucide.createIcons();
+        }
+
+        // ==================== TAREAS INTERNAS DENTRO DE UN PROYECTO ====================
+        function addTaskToProjectDraft() {
+            const nameEl = document.getElementById('proj-new-task-name');
+            const hoursEl = document.getElementById('proj-new-task-hours');
+            const name = nameEl.value.trim();
+            const estHours = parseFloat(hoursEl.value) || 0;
+
+            if (!name) {
+                showToast('Escribe el nombre de la tarea');
+                return;
+            }
+
+            // Si es una tarea nueva que no está en el catálogo global, la agregamos automáticamente para futuros usos
+            if (!appData.taskCatalog.some(t => t.name.toLowerCase() === name.toLowerCase())) {
+                appData.taskCatalog.unshift({ name, category: 'Personalizada' });
+            }
+
+            draftProjectTasks.push({
+                id: 'task-' + Date.now() + Math.random().toString(36).substr(2, 4),
+                name,
+                estHours,
+                done: false
+            });
+
+            nameEl.value = '';
+            hoursEl.value = '';
+            renderDraftProjectTasks();
+        }
+
+        function removeDraftProjectTask(idx) {
+            draftProjectTasks.splice(idx, 1);
+            renderDraftProjectTasks();
+        }
+
+        function renderDraftProjectTasks() {
+            const container = document.getElementById('modal-project-tasks-list');
+            const totalHoursBadge = document.getElementById('modal-tasks-total-hours');
+            const totalEst = draftProjectTasks.reduce((acc, t) => acc + (t.estHours || 0), 0);
+            totalHoursBadge.textContent = `${totalEst.toFixed(1)}h est.`;
+
+            if (draftProjectTasks.length === 0) {
+                container.innerHTML = `<p class="text-xs text-slate-500 italic py-2 text-center">Aún no hay tareas planificadas en este proyecto.</p>`;
+                return;
+            }
+
+            container.innerHTML = draftProjectTasks.map((t, index) => `
+                <div class="flex items-center justify-between bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs">
+                    <span class="text-white font-medium">${t.name}</span>
+                    <div class="flex items-center gap-3">
+                        <span class="font-mono text-orange-300">${t.estHours > 0 ? t.estHours + 'h' : 'Sin est.'}</span>
+                        <button type="button" onclick="removeDraftProjectTask(${index})" class="text-slate-400 hover:text-red-400">
+                            <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        // Modal dedicado para ver/agregar tareas de un proyecto existente
+        function openProjectTasksModal(projectId) {
+            const p = appData.projects.find(item => item.id === projectId);
+            if (!p) return;
+            document.getElementById('tasks-modal-proj-id').value = p.id;
+            document.getElementById('tasks-modal-proj-name').textContent = p.name;
+            document.getElementById('tasks-modal-proj-rubro').textContent = `${p.rubro} • ${p.modality}`;
+            renderDirectProjectTasks(p);
+            document.getElementById('modal-project-tasks').classList.remove('hidden');
+        }
+
+        function addTaskDirectlyToProject(e) {
+            e.preventDefault();
+            const projId = document.getElementById('tasks-modal-proj-id').value;
+            const p = appData.projects.find(item => item.id === projId);
+            if (!p) return;
+
+            const nameInput = document.getElementById('direct-task-name');
+            const hoursInput = document.getElementById('direct-task-hours');
+            const name = nameInput.value.trim();
+            const estHours = parseFloat(hoursInput.value) || 0;
+
+            if (!name) return;
+            if (!p.tasks) p.tasks = [];
+
+            p.tasks.push({
+                id: 'task-' + Date.now(),
+                name,
+                estHours,
+                done: false
+            });
+
+            if (!appData.taskCatalog.some(t => t.name.toLowerCase() === name.toLowerCase())) {
+                appData.taskCatalog.unshift({ name, category: 'Personalizada' });
+            }
+
+            nameInput.value = '';
+            hoursInput.value = '';
+            saveData();
+            renderDirectProjectTasks(p);
+            showToast('Tarea agregada al proyecto');
+        }
+
+        function toggleProjectTaskDone(projId, taskId) {
+            const p = appData.projects.find(item => item.id === projId);
+            if (!p || !p.tasks) return;
+            const t = p.tasks.find(item => item.id === taskId);
+            if (t) {
+                t.done = !t.done;
+                // Si se marca como finalizada y no tenía tiempo estimado previo, asignamos el tiempo real acumulado
+                if (t.done && (!t.estHours || t.estHours === 0)) {
+                    const realLogged = appData.logs
+                        .filter(l => l.projectId === projId && l.task.toLowerCase() === t.name.toLowerCase())
+                        .reduce((sum, l) => sum + l.hours, 0);
+                    if (realLogged > 0) {
+                        t.estHours = +realLogged.toFixed(2);
+                        // Recalcular horas estimadas totales del proyecto si estaba en 0 o sumar el nuevo estimado
+                        const totalTasksEst = p.tasks.reduce((sum, item) => sum + (item.estHours || 0), 0);
+                        if (totalTasksEst > p.estHours) p.estHours = totalTasksEst;
+                        showToast(`Estimado actualizado automáticamente a ${t.estHours}h`);
+                    }
+                }
+                saveData();
+                renderDirectProjectTasks(p);
+            }
+        }
+
+        function deleteTaskFromProject(projId, taskId) {
+            const p = appData.projects.find(item => item.id === projId);
+            if (!p || !p.tasks) return;
+            p.tasks = p.tasks.filter(item => item.id !== taskId);
+            saveData();
+            renderDirectProjectTasks(p);
+            showToast('Tarea eliminada del proyecto');
+        }
+
+        function renderDirectProjectTasks(project) {
+            const container = document.getElementById('direct-project-tasks-list');
+            const tasks = project.tasks || [];
+
+            if (tasks.length === 0) {
+                container.innerHTML = `<div class="text-center py-6 text-xs text-slate-400">Este proyecto aún no tiene tareas definidas. Agrega la primera arriba.</div>`;
+                return;
+            }
+
+            container.innerHTML = tasks.map(t => {
+                // Calcular horas reales invertidas en esta tarea dentro de este proyecto
+                const loggedHours = appData.logs
+                    .filter(l => l.projectId === project.id && l.task.toLowerCase() === t.name.toLowerCase())
+                    .reduce((sum, l) => sum + l.hours, 0);
+
+                return `
+                <div class="glass-card-light rounded-xl p-3 flex items-center justify-between gap-3">
+                    <div class="flex items-center gap-3">
+                        <button onclick="toggleProjectTaskDone('${project.id}', '${t.id}')" class="w-5 h-5 rounded-md border ${t.done ? 'bg-orange-500 border-orange-500 text-white' : 'border-white/30 text-transparent'} flex items-center justify-center transition">
+                            <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                        </button>
+                        <div>
+                            <p class="text-xs font-semibold ${t.done ? 'line-through text-slate-400' : 'text-white'}">${t.name}</p>
+                            <div class="flex items-center gap-3 mt-0.5 text-[11px]">
+                                <span class="text-orange-400 font-mono">Real: ${loggedHours.toFixed(1)}h</span>
+                                ${t.estHours > 0 ? `<span class="text-slate-400 font-mono">/ Est: ${t.estHours}h</span>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <button onclick="quickLogTask('${project.id}', '${t.name.replace(/'/g, "\\'")}')" title="Registrar horas en esta tarea" class="px-2.5 py-1 rounded-lg bg-orange-500/20 hover:bg-orange-500 text-orange-300 hover:text-white text-[11px] font-medium transition">
+                            + Horas
+                        </button>
+                        <button onclick="deleteTaskFromProject('${project.id}', '${t.id}')" class="p-1.5 text-slate-400 hover:text-red-400">
+                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </div>
+                </div>
+                `;
+            }).join('');
+            lucide.createIcons();
+        }
+
+        function quickLogTask(projectId, taskName) {
+            closeModal('modal-project-tasks');
+            openModal('modal-log');
+            document.getElementById('log-project-id').value = projectId;
+            updateLogTaskOptions();
+            document.getElementById('log-task').value = taskName;
+        }
+
+        // Al seleccionar un proyecto en el modal de bitácora, mostrar sus tareas planificadas como botones rápidos
+        function updateLogTaskOptions() {
+            const projId = document.getElementById('log-project-id').value;
+            const quickContainer = document.getElementById('log-project-quick-tasks');
+            const p = appData.projects.find(item => item.id === projId);
+
+            if (!p || !p.tasks || p.tasks.length === 0) {
+                quickContainer.innerHTML = '';
+                return;
+            }
+
+            quickContainer.innerHTML = `
+                <span class="text-[10px] text-slate-400 w-full">Tareas planificadas en este proyecto:</span>
+                ${p.tasks.map(t => `
+                    <button type="button" onclick="document.getElementById('log-task').value = '${t.name.replace(/'/g, "\\'")}'" class="text-[11px] px-2.5 py-1 rounded-lg bg-orange-500/15 hover:bg-orange-500/30 border border-orange-500/30 text-orange-200 transition">
+                        ${t.name}
+                    </button>
+                `).join('')}
+            `;
+        }
+
+        // Guardar o editar proyecto
+        function saveProject(e) {
+            e.preventDefault();
+            const id = document.getElementById('proj-id').value;
+            const tasksTotalEst = draftProjectTasks.reduce((sum, t) => sum + (t.estHours || 0), 0);
+            const manualEstHours = parseFloat(document.getElementById('proj-est-hours').value) || 0;
+
+            const projectObj = {
+                id: id || 'proj-' + Date.now(),
+                name: document.getElementById('proj-name').value.trim(),
+                rubro: document.getElementById('proj-rubro').value,
+                modality: document.getElementById('proj-modality').value,
+                startDate: document.getElementById('proj-start').value,
+                endDate: document.getElementById('proj-end').value,
+                status: document.getElementById('proj-status').value,
+                estHours: manualEstHours > 0 ? manualEstHours : tasksTotalEst,
+                budget: parseFloat(document.getElementById('proj-budget').value) || 0,
+                notes: document.getElementById('proj-notes').value.trim(),
+                tasks: [...draftProjectTasks]
+            };
+
+            if (id) {
+                const idx = appData.projects.findIndex(p => p.id === id);
+                if (idx !== -1) appData.projects[idx] = projectObj;
+                showToast('Proyecto y tareas actualizados');
+            } else {
+                appData.projects.unshift(projectObj);
+                showToast('Nuevo proyecto creado con sus tareas');
+            }
+
+            saveData();
+            closeModal('modal-project');
+        }
+
+        function editProject(id) {
+            const p = appData.projects.find(item => item.id === id);
+            if (!p) return;
+            populateProjectSelects();
+            document.getElementById('proj-id').value = p.id;
+            document.getElementById('proj-name').value = p.name;
+            document.getElementById('proj-rubro').value = p.rubro;
+            document.getElementById('proj-modality').value = p.modality;
+            document.getElementById('proj-start').value = p.startDate;
+            document.getElementById('proj-end').value = p.endDate || '';
+            document.getElementById('proj-status').value = p.status;
+            document.getElementById('proj-est-hours').value = p.estHours || '';
+            document.getElementById('proj-budget').value = p.budget || '';
+            document.getElementById('proj-notes').value = p.notes || '';
+            draftProjectTasks = p.tasks ? JSON.parse(JSON.stringify(p.tasks)) : [];
+            renderDraftProjectTasks();
+            document.getElementById('modal-project-title').textContent = 'Editar Proyecto';
+            document.getElementById('modal-project').classList.remove('hidden');
+        }
+
+        function deleteProject(id) {
+            appData.projects = appData.projects.filter(p => p.id !== id);
+            appData.logs = appData.logs.filter(l => l.projectId !== id);
+            saveData();
+            showToast('Proyecto y sus registros eliminados');
+        }
+
+        // Guardar registro de horas en bitácora
+        function saveLog(e) {
+            e.preventDefault();
+            const taskName = document.getElementById('log-task').value.trim();
+            const newLog = {
+                id: 'log-' + Date.now(),
+                projectId: document.getElementById('log-project-id').value,
+                date: document.getElementById('log-date').value,
+                hours: parseFloat(document.getElementById('log-hours').value),
+                task: taskName,
+                notes: document.getElementById('log-notes').value.trim()
+            };
+
+            // Si el usuario escribió una tarea nueva que no existía, la agregamos al catálogo y al proyecto
+            if (!appData.taskCatalog.some(t => t.name.toLowerCase() === taskName.toLowerCase())) {
+                appData.taskCatalog.unshift({ name: taskName, category: 'Personalizada' });
+            }
+
+            appData.logs.unshift(newLog);
+
+            const proj = appData.projects.find(p => p.id === newLog.projectId);
+            if (proj) {
+                if (!proj.tasks) proj.tasks = [];
+                let existingTask = proj.tasks.find(t => t.name.toLowerCase() === taskName.toLowerCase());
+                
+                // Calcular horas reales totales acumuladas en esta tarea dentro del proyecto
+                const totalTaskReal = appData.logs
+                    .filter(l => l.projectId === proj.id && l.task.toLowerCase() === taskName.toLowerCase())
+                    .reduce((sum, l) => sum + l.hours, 0);
+
+                if (!existingTask) {
+                    // Si la tarea se crea al vuelo sin estimado previo, su estimado toma el tiempo real registrado
+                    proj.tasks.push({
+                        id: 'task-' + Date.now(),
+                        name: taskName,
+                        estHours: +totalTaskReal.toFixed(2),
+                        done: false
+                    });
+                } else if (!existingTask.estHours || existingTask.estHours === 0) {
+                    // Si existía sin tiempo estimado (0h), se actualiza con el tiempo real acumulado
+                    existingTask.estHours = +totalTaskReal.toFixed(2);
+                }
+
+                // Actualizar horas estimadas del proyecto si la suma de tareas lo supera
+                const sumTasksEst = proj.tasks.reduce((sum, t) => sum + (t.estHours || 0), 0);
+                if (sumTasksEst > (proj.estHours || 0)) {
+                    proj.estHours = +sumTasksEst.toFixed(2);
+                }
+            }
+
+            saveData();
+            document.getElementById('form-log').reset();
+            closeModal('modal-log');
+            showToast(`+${newLog.hours}h registradas en "${taskName}"`);
+        }
+
+        function deleteLog(id) {
+            appData.logs = appData.logs.filter(l => l.id !== id);
+            saveData();
+            showToast('Registro eliminado');
+        }
+
+        // Cálculos de tiempo por proyecto (Total, Hoy, Esta Semana)
+        function getProjectMetrics(projectId) {
+            const todayStr = getRelativeDate(0);
+            const now = new Date();
+            const startOfWeek = new Date(now);
+            const day = now.getDay() || 7; // Lunes = 1, Domingo = 7
+            startOfWeek.setDate(now.getDate() - day + 1);
+            startOfWeek.setHours(0, 0, 0, 0);
+
+            let totalHours = 0;
+            let todayHours = 0;
+            let weekHours = 0;
+
+            appData.logs.forEach(log => {
+                if (log.projectId === projectId) {
+                    totalHours += log.hours;
+                    if (log.date === todayStr) todayHours += log.hours;
+                    const logDate = new Date(log.date + 'T00:00:00');
+                    if (logDate >= startOfWeek) weekHours += log.hours;
+                }
+            });
+
+            return { totalHours, todayHours, weekHours };
+        }
+
+        // Renderizar Lista de Proyectos
+        function renderProjects() {
+            const grid = document.getElementById('projects-grid');
+            const filterRubro = document.getElementById('filter-project-rubro').value;
+            const filterModality = document.getElementById('filter-project-modality').value;
+            const filterStatus = document.getElementById('filter-project-status').value;
+            const search = document.getElementById('search-project').value.toLowerCase();
+
+            const filtered = appData.projects.filter(p => {
+                const matchRubro = filterRubro === 'ALL' || p.rubro === filterRubro;
+                const matchMod = filterModality === 'ALL' || p.modality === filterModality;
+                const matchStatus = filterStatus === 'ALL' || p.status === filterStatus;
+                const matchSearch = p.name.toLowerCase().includes(search) || p.rubro.toLowerCase().includes(search);
+                return matchRubro && matchMod && matchStatus && matchSearch;
+            });
+
+            if (filtered.length === 0) {
+                grid.innerHTML = `<div class="col-span-full glass-panel rounded-2xl p-8 text-center text-slate-400">No se encontraron proyectos con estos filtros.</div>`;
+                return;
+            }
+
+            grid.innerHTML = filtered.map(p => {
+                const metrics = getProjectMetrics(p.id);
+                const statusBadge = p.status === 'Finalizado' 
+                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' 
+                    : p.status === 'Pausado' 
+                        ? 'bg-slate-500/20 text-slate-300 border-slate-500/30'
+                        : 'bg-orange-500/20 text-orange-300 border-orange-500/30';
+
+                const modalityBadge = p.modality.includes('Propio') 
+                    ? 'text-orange-300 bg-orange-500/10' 
+                    : p.modality.includes('Equipo') 
+                        ? 'text-sky-300 bg-sky-500/10'
+                        : 'text-slate-200 bg-white/10';
+
+                const progressPct = p.estHours > 0 ? Math.min(100, Math.round((metrics.totalHours / p.estHours) * 100)) : 0;
+                const projectTasks = p.tasks || [];
+                const completedTasksCount = projectTasks.filter(t => t.done).length;
+
+                return `
+                <div class="glass-panel rounded-2xl p-5 flex flex-col justify-between hover:border-orange-500/40 transition">
+                    <div>
+                        <div class="flex items-start justify-between gap-2 mb-3">
+                            <span class="text-[11px] font-semibold px-2.5 py-1 rounded-lg border ${statusBadge}">${p.status}</span>
+                            <div class="flex items-center gap-1">
+                                <button onclick="openProjectTasksModal('${p.id}')" title="Ver / Agregar Tareas" class="p-1.5 rounded-lg hover:bg-white/15 text-orange-300 transition flex items-center gap-1 text-xs">
+                                    <i data-lucide="list-todo" class="w-4 h-4"></i>
+                                </button>
+                                <button onclick="quickLogForProject('${p.id}')" title="Sumar horas" class="p-1.5 rounded-lg hover:bg-orange-500/20 text-orange-400 transition">
+                                    <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                                </button>
+                                <button onclick="editProject('${p.id}')" title="Editar" class="p-1.5 rounded-lg hover:bg-white/10 text-slate-300 transition">
+                                    <i data-lucide="pencil" class="w-4 h-4"></i>
+                                </button>
+                                <button onclick="deleteProject('${p.id}')" title="Eliminar" class="p-1.5 rounded-lg hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <h4 class="font-bold text-white text-base leading-snug mb-1">${p.name}</h4>
+                        <p class="text-xs text-orange-400 font-medium mb-2">${p.rubro}</p>
+                        
+                        <div class="flex flex-wrap gap-1.5 mb-3">
+                            <span class="text-[11px] px-2 py-0.5 rounded-md ${modalityBadge}">${p.modality}</span>
+                            ${p.budget > 0 ? `<span class="text-[11px] px-2 py-0.5 rounded-md bg-white/10 text-white font-mono">$${p.budget}</span>` : ''}
+                        </div>
+
+                        <!-- Resumen de Tareas Internas del Proyecto -->
+                        <div class="bg-slate-900/40 rounded-xl p-2.5 mb-3 border border-white/5">
+                            <div class="flex items-center justify-between mb-1.5">
+                                <span class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Tareas (${completedTasksCount}/${projectTasks.length})</span>
+                                <button onclick="openProjectTasksModal('${p.id}')" class="text-[11px] text-orange-400 hover:underline font-medium">+ Gestionar</button>
+                            </div>
+                            ${projectTasks.length > 0 ? `
+                                <div class="space-y-1 max-h-24 overflow-y-auto pr-1">
+                                    ${projectTasks.map(t => {
+                                        const tReal = appData.logs
+                                            .filter(l => l.projectId === p.id && l.task.toLowerCase() === t.name.toLowerCase())
+                                            .reduce((s, l) => s + l.hours, 0);
+                                        return `
+                                        <div class="flex items-center justify-between text-[11px] py-0.5">
+                                            <span class="truncate pr-2 ${t.done ? 'line-through text-slate-500' : 'text-slate-200'}">• ${t.name}</span>
+                                            <span class="font-mono text-[10px] text-orange-300 shrink-0">${tReal.toFixed(1)}h${t.estHours > 0 ? '/' + t.estHours + 'h' : ''}</span>
+                                        </div>
+                                        `;
+                                    }).join('')}
+                                </div>
+                            ` : `<p class="text-[11px] text-slate-500 italic">Sin tareas desglosadas</p>`}
+                        </div>
+
+                        <!-- Fechas -->
+                        <div class="grid grid-cols-2 gap-2 text-xs bg-slate-900/50 rounded-xl p-2.5 mb-4 border border-white/5">
+                            <div>
+                                <span class="text-slate-400 block text-[10px] uppercase">Inicio</span>
+                                <span class="text-slate-200 font-mono">${p.startDate}</span>
+                            </div>
+                            <div>
+                                <span class="text-slate-400 block text-[10px] uppercase">Finalización</span>
+                                <span class="text-slate-200 font-mono">${p.endDate || 'En curso'}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Métricas de Horas (Día, Semana, Total) -->
+                    <div class="pt-3 border-t border-white/10">
+                        <div class="grid grid-cols-3 gap-2 text-center mb-3">
+                            <div class="bg-white/5 rounded-xl py-1.5 px-1">
+                                <span class="block text-[10px] text-slate-400">Hoy</span>
+                                <span class="font-mono text-xs font-bold text-white">${metrics.todayHours.toFixed(1)}h</span>
+                            </div>
+                            <div class="bg-white/5 rounded-xl py-1.5 px-1">
+                                <span class="block text-[10px] text-slate-400">Semana</span>
+                                <span class="font-mono text-xs font-bold text-orange-300">${metrics.weekHours.toFixed(1)}h</span>
+                            </div>
+                            <div class="bg-orange-500/15 border border-orange-500/20 rounded-xl py-1.5 px-1">
+                                <span class="block text-[10px] text-orange-300">Total</span>
+                                <span class="font-mono text-xs font-bold text-orange-400">${metrics.totalHours.toFixed(1)}h</span>
+                            </div>
+                        </div>
+
+                        ${p.estHours > 0 ? `
+                        <div>
+                            <div class="flex justify-between text-[11px] text-slate-400 mb-1">
+                                <span>Progreso vs Estimado (${p.estHours}h)</span>
+                                <span>${progressPct}%</span>
+                            </div>
+                            <div class="w-full bg-slate-800 rounded-full h-1.5">
+                                <div class="bg-gradient-to-r from-orange-500 to-amber-400 h-1.5 rounded-full" style="width: ${progressPct}%"></div>
+                            </div>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+                `;
+            }).join('');
+
+            lucide.createIcons();
+        }
+
+        function quickLogForProject(projectId) {
+            openModal('modal-log');
+            document.getElementById('log-project-id').value = projectId;
+        }
+
+        // Renderizar Bitácora Diaria
+        function renderLogs() {
+            const tbody = document.getElementById('logs-table-body');
+            const filterProj = document.getElementById('filter-log-project').value;
+
+            const sortedLogs = [...appData.logs]
+                .filter(l => filterProj === 'ALL' || l.projectId === filterProj)
+                .sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            if (sortedLogs.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-slate-400">No hay registros de horas aún.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = sortedLogs.map(log => {
+                const proj = appData.projects.find(p => p.id === log.projectId) || { name: 'Proyecto Eliminado', rubro: '-', modality: '-' };
+                return `
+                <tr class="hover:bg-white/5 transition">
+                    <td class="py-3 px-4 font-mono text-xs text-slate-300 whitespace-nowrap">${log.date}</td>
+                    <td class="py-3 px-4">
+                        <div class="font-medium text-white text-xs sm:text-sm">${proj.name}</div>
+                        <div class="text-[11px] text-slate-400">${proj.modality}</div>
+                    </td>
+                    <td class="py-3 px-4 text-xs text-orange-300">${proj.rubro}</td>
+                    <td class="py-3 px-4">
+                        <span class="px-2.5 py-1 rounded-lg bg-white/10 text-xs text-white font-medium">${log.task}</span>
+                    </td>
+                    <td class="py-3 px-4 text-xs text-slate-300 max-w-xs truncate" title="${log.notes}">${log.notes || '-'}</td>
+                    <td class="py-3 px-4 text-right font-mono font-bold text-orange-400">${log.hours.toFixed(2)} h</td>
+                    <td class="py-3 px-4 text-center">
+                        <button onclick="deleteLog('${log.id}')" class="p-1.5 rounded-lg hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    </td>
+                </tr>
+                `;
+            }).join('');
+
+            lucide.createIcons();
+        }
+
+        // Renderizar Dashboard y Gráficos
+        function renderDashboard() {
+            const todayStr = getRelativeDate(0);
+            const now = new Date();
+            const startOfWeek = new Date(now);
+            const day = now.getDay() || 7;
+            startOfWeek.setDate(now.getDate() - day + 1);
+            startOfWeek.setHours(0, 0, 0, 0);
+
+            let hoursToday = 0;
+            let sessionsToday = 0;
+            let hoursWeek = 0;
+
+            appData.logs.forEach(l => {
+                if (l.date === todayStr) {
+                    hoursToday += l.hours;
+                    sessionsToday++;
+                }
+                const d = new Date(l.date + 'T00:00:00');
+                if (d >= startOfWeek) {
+                    hoursWeek += l.hours;
+                }
+            });
+
+            document.getElementById('kpi-hours-today').textContent = `${hoursToday.toFixed(1)} h`;
+            document.getElementById('kpi-today-detail').textContent = `En ${sessionsToday} sesiones registradas hoy`;
+            
+            document.getElementById('kpi-hours-week').textContent = `${hoursWeek.toFixed(1)} h`;
+            const weekPct = Math.min(100, (hoursWeek / 40) * 100);
+            document.getElementById('kpi-week-bar').style.width = `${weekPct}%`;
+
+            // Proyectos activos y modalidades
+            const activeProjs = appData.projects.filter(p => p.status === 'En Progreso');
+            const propios = appData.projects.filter(p => p.modality.includes('Propio')).length;
+            const equipo = appData.projects.filter(p => p.modality.includes('Equipo')).length;
+            const empresa = appData.projects.filter(p => p.modality.includes('Empresa')).length;
+
+            document.getElementById('kpi-active-projects').textContent = activeProjs.length;
+            document.getElementById('kpi-modality-split').textContent = `Propios: ${propios} | Equipo: ${equipo} | Empresa: ${empresa}`;
+
+            // Promedio de proyectos completos
+            const completedProjs = appData.projects.filter(p => p.status === 'Finalizado');
+            let totalCompletedHours = 0;
+            completedProjs.forEach(p => {
+                totalCompletedHours += getProjectMetrics(p.id).totalHours;
+            });
+            const avgProjHours = completedProjs.length > 0 ? (totalCompletedHours / completedProjs.length) : 0;
+            document.getElementById('kpi-avg-project').textContent = `${avgProjHours.toFixed(1)} h`;
+            document.getElementById('kpi-completed-count').textContent = `Basado en ${completedProjs.length} proyectos finalizados`;
+
+            // Agrupación por Rubro
+            const rubroHours = {};
+            appData.logs.forEach(l => {
+                const p = appData.projects.find(item => item.id === l.projectId);
+                const r = p ? p.rubro : 'Otros';
+                rubroHours[r] = (rubroHours[r] || 0) + l.hours;
+            });
+            // Agrupación por Tarea Específica + Rubro (para diferenciar ej. Prep. Clases Robótica vs Ciencia de Datos)
+            const taskStats = {};
+            const rubroFilter = document.getElementById('benchmark-rubro-filter').value;
+
+            appData.logs.forEach(l => {
+                const p = appData.projects.find(item => item.id === l.projectId);
+                const r = p ? p.rubro : 'General';
+                if (rubroFilter !== 'ALL' && r !== rubroFilter) return;
+
+                // Clave compuesta Tarea + Rubro para precisión real en cotizaciones
+                const compositeKey = `${l.task}|||${r}`;
+
+                if (!taskStats[compositeKey]) {
+                    taskStats[compositeKey] = { taskName: l.task, rubro: r, count: 0, total: 0, min: l.hours, max: l.hours };
+                }
+                taskStats[compositeKey].count++;
+                taskStats[compositeKey].total += l.hours;
+                taskStats[compositeKey].min = Math.min(taskStats[compositeKey].min, l.hours);
+                taskStats[compositeKey].max = Math.max(taskStats[compositeKey].max, l.hours);
+            });
+
+            // Renderizar Tabla Benchmark
+            const benchBody = document.getElementById('benchmark-table-body');
+            const taskKeys = Object.keys(taskStats);
+
+            if (taskKeys.length === 0) {
+                benchBody.innerHTML = `<tr><td colspan="6" class="py-6 text-center text-slate-400">No hay datos de tareas para este filtro.</td></tr>`;
+            } else {
+                benchBody.innerHTML = taskKeys.map(k => {
+                    const st = taskStats[k];
+                    const avg = st.total / st.count;
+                    const suggested = avg * 1.2; // +20% buffer
+
+                    return `
+                    <tr class="hover:bg-white/5 transition">
+                        <td class="py-3 px-4 font-medium text-white">${st.taskName}</td>
+                        <td class="py-3 px-4 text-xs text-orange-300">${st.rubro}</td>
+                        <td class="py-3 px-4 text-center font-mono text-xs text-slate-300">${st.count}</td>
+                        <td class="py-3 px-4 text-right font-mono text-xs text-slate-400">${st.min.toFixed(1)}h / ${st.max.toFixed(1)}h</td>
+                        <td class="py-3 px-4 text-right font-mono font-bold text-orange-400">${avg.toFixed(2)} h</td>
+                        <td class="py-3 px-4 text-right font-mono text-xs text-emerald-300">${suggested.toFixed(2)} h</td>
+                    </tr>
+                    `;
+                }).join('');
+            }
+
+            updateCharts(rubroHours, taskStats);
+        }
+
+        // Actualizar Gráficos Chart.js
+        function updateCharts(rubroHours, taskStats) {
+            const ctxRubros = document.getElementById('chartRubros').getContext('2d');
+            const ctxTareas = document.getElementById('chartTareas').getContext('2d');
+
+            if (chartRubrosInstance) chartRubrosInstance.destroy();
+            if (chartTareasInstance) chartTareasInstance.destroy();
+
+            const palette = [
+                '#f97316', // Naranja principal
+                '#f8fafc', // Blanco
+                '#94a3b8', // Gris claro
+                '#fb923c', // Naranja claro
+                '#475569', // Gris pizarra medio
+                '#ea580c', // Naranja oscuro
+                '#cbd5e1'  // Gris hielo
+            ];
+
+            chartRubrosInstance = new Chart(ctxRubros, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(rubroHours),
+                    datasets: [{
+                        data: Object.values(rubroHours),
+                        backgroundColor: palette,
+                        borderColor: 'rgba(15, 23, 42, 0.8)',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: { color: '#e2e8f0', font: { size: 11, family: 'Inter' } }
+                        }
+                    }
+                }
+            });
+
+            const taskLabels = Object.values(taskStats).map(s => {
+                const shortTask = s.taskName.length > 18 ? s.taskName.substring(0, 18) + '...' : s.taskName;
+                const shortRubro = s.rubro.split(' ')[0];
+                return `${shortTask} (${shortRubro})`;
+            });
+            const taskAvgs = Object.values(taskStats).map(s => +(s.total / s.count).toFixed(2));
+
+            chartTareasInstance = new Chart(ctxTareas, {
+                type: 'bar',
+                data: {
+                    labels: taskLabels,
+                    datasets: [{
+                        label: 'Horas Promedio',
+                        data: taskAvgs,
+                        backgroundColor: 'rgba(249, 115, 22, 0.75)',
+                        borderColor: '#f97316',
+                        borderWidth: 1,
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(255, 255, 255, 0.08)' },
+                            ticks: { color: '#94a3b8', font: { family: 'JetBrains Mono' } }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#cbd5e1', font: { size: 10 } }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+
+        // Planificador y Monetización
+        function calculateCapacity() {
+            const hDay = parseFloat(document.getElementById('est-hours-day').value) || 0;
+            const dMonth = parseFloat(document.getElementById('est-days-month').value) || 0;
+            const rate = parseFloat(document.getElementById('est-hourly-rate').value) || 0;
+            const buffer = parseFloat(document.getElementById('est-buffer').value) || 0;
+
+            const totalMonthHours = hDay * dMonth;
+            const totalMoney = totalMonthHours * rate;
+
+            document.getElementById('cap-total-hours').textContent = `${totalMonthHours.toFixed(0)} h`;
+            document.getElementById('cap-total-money').textContent = `$${totalMoney.toLocaleString()}`;
+
+            // Calcular promedio de horas por proyecto en tu historial
+            let sumHours = 0;
+            appData.projects.forEach(p => {
+                sumHours += getProjectMetrics(p.id).totalHours;
+            });
+            const avgProj = appData.projects.length > 0 ? (sumHours / appData.projects.length) : 25;
+            const projectsPerMonth = avgProj > 0 ? (totalMonthHours / avgProj) : 0;
+
+            document.getElementById('cap-projects-month').textContent = projectsPerMonth.toFixed(1);
+
+            // Desglose por Rubro para cotizar nuevos proyectos
+            const rubroStats = {};
+            appData.projects.forEach(p => {
+                const hrs = getProjectMetrics(p.id).totalHours;
+                if (!rubroStats[p.rubro]) rubroStats[p.rubro] = { count: 0, hours: 0 };
+                rubroStats[p.rubro].count++;
+                rubroStats[p.rubro].hours += hrs;
+            });
+
+            const container = document.getElementById('estimator-rubros-list');
+            container.innerHTML = Object.keys(rubroStats).map(r => {
+                const avgH = rubroStats[r].hours / rubroStats[r].count || 10;
+                const withBufferH = avgH * (1 + buffer / 100);
+                const price = withBufferH * rate;
+                const maxMonthly = withBufferH > 0 ? (totalMonthHours / withBufferH).toFixed(1) : '-';
+
+                return `
+                <div class="glass-card-light rounded-xl p-3.5 flex flex-col justify-between">
+                    <div class="flex items-start justify-between gap-2 mb-2">
+                        <span class="text-xs font-bold text-white">${r}</span>
+                        <span class="text-[11px] font-mono text-orange-400 font-semibold">$${price.toFixed(0)}</span>
+                    </div>
+                    <div class="flex items-center justify-between text-[11px] text-slate-300">
+                        <span>Est. c/margen: <strong class="font-mono text-white">${withBufferH.toFixed(1)}h</strong></span>
+                        <span>Capacidad: <strong class="font-mono text-emerald-300">${maxMonthly} proy/mes</strong></span>
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
+
+        // Actualizar sugerencias de tareas en el Cronómetro según el proyecto seleccionado (solo las de ese proyecto)
+        function updateTimerTaskOptions() {
+            const projId = document.getElementById('timer-project-select').value;
+            const datalist = document.getElementById('timer-project-tasks-list');
+            const taskInput = document.getElementById('timer-task-input');
+            if (!datalist) return;
+
+            const p = appData.projects.find(item => item.id === projId);
+            const projTasks = (p && p.tasks) ? p.tasks.map(t => t.name) : [];
+
+            datalist.innerHTML = projTasks.map(name => `<option value="${name}">`).join('');
+            if (taskInput) {
+                taskInput.placeholder = projId 
+                    ? (projTasks.length > 0 ? `Tareas del proyecto (${projTasks.length}) o nueva...` : 'Sin tareas aún, escribe una...')
+                    : 'Selecciona primero un proyecto...';
+            }
+        }
+
+        // Cronómetro en vivo
+        function toggleTimer() {
+            const btnText = document.getElementById('btn-timer-text');
+            const dot = document.getElementById('timer-dot');
+            const btn = document.getElementById('btn-timer-toggle');
+
+            if (timerRunning) {
+                clearInterval(timerInterval);
+                timerRunning = false;
+                btnText.textContent = 'Reanudar';
+                dot.className = 'w-2 h-2 rounded-full bg-amber-400';
+                btn.classList.remove('timer-active');
+            } else {
+                timerRunning = true;
+                btnText.textContent = 'Pausar';
+                dot.className = 'w-2 h-2 rounded-full bg-orange-500 animate-ping';
+                btn.classList.add('timer-active');
+                timerInterval = setInterval(() => {
+                    timerSeconds++;
+                    updateTimerDisplay();
+                }, 1000);
+            }
+        }
+
+        function updateTimerDisplay() {
+            const hrs = Math.floor(timerSeconds / 3600).toString().padStart(2, '0');
+            const mins = Math.floor((timerSeconds % 3600) / 60).toString().padStart(2, '0');
+            const secs = (timerSeconds % 60).toString().padStart(2, '0');
+            document.getElementById('timer-display').textContent = `${hrs}:${mins}:${secs}`;
+        }
+
+        function saveTimerToLog() {
+            if (timerSeconds < 60) {
+                showToast('Acumula al menos 1 minuto para registrar.');
+                return;
+            }
+            const projId = document.getElementById('timer-project-select').value;
+            const taskName = document.getElementById('timer-task-input').value.trim();
+            const hoursCalculated = Math.max(0.25, +(timerSeconds / 3600).toFixed(2));
+
+            clearInterval(timerInterval);
+            timerRunning = false;
+            timerSeconds = 0;
+            updateTimerDisplay();
+            document.getElementById('btn-timer-text').textContent = 'Iniciar';
+            document.getElementById('timer-dot').className = 'w-2 h-2 rounded-full bg-slate-400';
+            document.getElementById('btn-timer-toggle').classList.remove('timer-active');
+
+            openModal('modal-log');
+            if (projId) {
+                document.getElementById('log-project-id').value = projId;
+                updateLogTaskOptions();
+            }
+            if (taskName) {
+                document.getElementById('log-task').value = taskName;
+            }
+            document.getElementById('log-hours').value = hoursCalculated;
+            document.getElementById('timer-task-input').value = '';
+        }
+
+        // Exportar e Importar JSON
+        function exportJSON() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appData, null, 2));
+            const dlAnchor = document.createElement('a');
+            dlAnchor.setAttribute("href", dataStr);
+            dlAnchor.setAttribute("download", `bitacora_backup_${getRelativeDate(0)}.json`);
+            document.body.appendChild(dlAnchor);
+            dlAnchor.click();
+            dlAnchor.remove();
+            showToast('Respaldo JSON descargado');
+        }
+
+        function importJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (imported.projects && imported.logs) {
+                        appData = imported;
+                        saveData();
+                        showToast('Datos restaurados exitosamente');
+                    }
+                } catch (err) {
+                    showToast('Archivo JSON inválido');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // Descargar la app completa como archivo .html para escritorio
+        function downloadStandaloneApp() {
+            const htmlContent = document.documentElement.outerHTML;
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'BitacoraStudio_Desktop.html';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+            showToast('Aplicación .html descargada para tu PC');
+        }
+
+        function refreshAllViews() {
+            populateProjectSelects();
+            renderProjects();
+            renderLogs();
+            renderDashboard();
+            calculateCapacity();
+            renderCatalog();
+        }
+
+        // Inicialización al cargar
+        window.addEventListener('DOMContentLoaded', () => {
+            refreshAllViews();
+        });
+    </script>
+</body>
+</html>
