@@ -2,9 +2,9 @@
 
 ## Estado general
 
-- **Fase 1 — Base del proyecto:** En curso. La migración se aplicó en Supabase y se verificaron las seis tablas, RLS en todas, siete políticas y ocho triggers. Falta validar un registro de extremo a extremo y confirmar la configuración de Auth.
-- **Fase 2 — Operación y modo offline:** Pendiente.
-- **Fase 3 — Analítica y capacidad:** Pendiente; existe una maqueta visual del dashboard, pero todavía no calcula métricas reales.
+- **Fase 1 — Base del proyecto:** Implementada en el repositorio. La migración se aplicó en Supabase y se verificaron las seis tablas, RLS en todas, siete políticas y ocho triggers. Email Auth está habilitado; Google está deshabilitado y el registro extremo a extremo requiere una cuenta de prueba válida y acceso al dashboard.
+- **Fase 2 — Operación y modo offline:** Implementada y validada en navegador local. Incluye IndexedDB, cola de sincronización, CRUD, cronómetro, autoestimación y recuperación de conexión.
+- **Fase 3 — Analítica y capacidad:** Implementada y validada con registros locales de prueba. Incluye métricas, gráficos, benchmarks, capacidad configurable y cotizador por rubro.
 - **Fase 4 — PWA y monetización:** Pendiente.
 
 ## Fase 1 — Estructura, diseño, Supabase y autenticación
@@ -22,23 +22,23 @@
 
 ## Fase 2 — CRUD, cronómetro y arquitectura offline-first
 
-- [ ] Incorporar IndexedDB/Dexie y definir el modelo de datos local.
-- [ ] Implementar la cola de sincronización y el indicador de estado online/offline.
-- [ ] Crear CRUD de proyectos, tareas internas, rubros y plantillas de tareas.
-- [ ] Implementar el cronómetro vinculado a proyecto y filtrar tareas por proyecto.
-- [ ] Permitir crear tareas desde el cronómetro.
-- [ ] Aplicar la autoestimación de tareas al registrar horas o completarlas.
-- [ ] Probar sincronización, reintentos y conflictos al recuperar conexión.
+- [x] Incorporar IndexedDB/Dexie y definir el modelo de datos local.
+- [x] Implementar la cola de sincronización y el indicador de estado online/offline.
+- [x] Crear CRUD de proyectos, tareas internas, rubros y plantillas de tareas.
+- [x] Implementar el cronómetro vinculado a proyecto y filtrar tareas por proyecto.
+- [x] Permitir crear tareas desde el cronómetro.
+- [x] Aplicar la autoestimación de tareas al registrar horas o completarlas.
+- [x] Probar sincronización, reintentos y conflictos al recuperar conexión.
 
 ## Fase 3 — Dashboard analítico y capacidad
 
-- [ ] Calcular horas de hoy, de la semana y acumuladas por proyecto desde datos reales.
-- [ ] Añadir visualizaciones por rubro y proyecto.
-- [ ] Implementar benchmarks históricos cruzando título de tarea y rubro.
-- [ ] Incorporar el buffer configurable para sugerencias de estimación.
-- [ ] Calcular capacidad mensual según horas disponibles y carga de proyectos activos.
-- [ ] Crear el simulador de cotización por rubro y conjunto de tareas.
-- [ ] Validar métricas y cálculos con registros de prueba.
+- [x] Calcular horas de hoy, de la semana y acumuladas por proyecto desde datos reales.
+- [x] Añadir visualizaciones por rubro y proyecto.
+- [x] Implementar benchmarks históricos cruzando título de tarea y rubro.
+- [x] Incorporar el buffer configurable para sugerencias de estimación.
+- [x] Calcular capacidad mensual según horas disponibles y carga de proyectos activos.
+- [x] Crear el simulador de cotización por rubro y conjunto de tareas.
+- [x] Validar métricas y cálculos con registros de prueba.
 
 ## Fase 4 — PWA, límites de plan y pagos web
 
